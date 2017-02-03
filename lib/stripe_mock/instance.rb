@@ -35,6 +35,7 @@ module StripeMock
     include StripeMock::RequestHandlers::InvoiceItems
     include StripeMock::RequestHandlers::Orders
     include StripeMock::RequestHandlers::Plans
+    include StripeMock::RequestHandlers::Refunds
     include StripeMock::RequestHandlers::Recipients
     include StripeMock::RequestHandlers::Transfers
     include StripeMock::RequestHandlers::Tokens
@@ -43,7 +44,7 @@ module StripeMock
 
     attr_reader :accounts, :application_fees, :balance_transactions, :bank_tokens, :charges, :coupons, :customers,
                 :disputes, :events, :invoices, :invoice_items, :orders, :plans, :recipients,
-                :transfers, :subscriptions, :country_spec
+                :refunds, :transfers, :subscriptions, :country_spec
 
     attr_accessor :error_queue, :debug
 
@@ -63,6 +64,7 @@ module StripeMock
       @orders = {}
       @plans = {}
       @recipients = {}
+      @refunds = {}
       @transfers = {}
       @subscriptions = {}
       @country_spec = {}
@@ -151,7 +153,7 @@ module StripeMock
       amount = params[:amount]
       unless amount.nil?
         # Fee calculation
-        params[:fee] ||= 30 + (amount * 0.029).ceil
+        params[:fee] ||= (30 + (amount.abs * 0.029).ceil) * (amount > 0 ? 1 : -1)
       end
       @balance_transactions[id] = Data.mock_balance_transaction(params.merge(id: id))
       id

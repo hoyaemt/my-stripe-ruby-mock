@@ -12,11 +12,20 @@ shared_examples 'Charge API' do
     }.to raise_error(Stripe::InvalidRequestError, /token/i)
   end
 
+  it "requires a valid customer or source", :live => true do
+    expect {
+      charge = Stripe::Charge.create(
+        amount: 99,
+        currency: 'usd',
+      )
+    }.to raise_error(Stripe::InvalidRequestError, /Must provide source or customer/i)
+  end
+
   it "requires presence of amount", :live => true do
     expect {
       charge = Stripe::Charge.create(
         currency: 'usd',
-        card: stripe_helper.generate_card_token
+        source: stripe_helper.generate_card_token
       )
     }.to raise_error(Stripe::InvalidRequestError, /missing required param: amount/i)
   end
@@ -25,7 +34,7 @@ shared_examples 'Charge API' do
     expect {
       charge = Stripe::Charge.create(
         amount: 99,
-        card: stripe_helper.generate_card_token
+        source: stripe_helper.generate_card_token
       )
     }.to raise_error(Stripe::InvalidRequestError, /missing required param: currency/i)
   end
@@ -35,7 +44,7 @@ shared_examples 'Charge API' do
       charge = Stripe::Charge.create(
         amount: -99,
         currency: 'usd',
-        card: stripe_helper.generate_card_token
+        source: stripe_helper.generate_card_token
       )
     }.to raise_error(Stripe::InvalidRequestError, /invalid positive integer/i)
   end
@@ -45,7 +54,7 @@ shared_examples 'Charge API' do
       charge = Stripe::Charge.create(
         amount: 99.0,
         currency: 'usd',
-        card: stripe_helper.generate_card_token
+        source: stripe_helper.generate_card_token
       )
     }.to raise_error(Stripe::InvalidRequestError, /invalid integer/i)
   end
@@ -61,6 +70,21 @@ shared_examples 'Charge API' do
     expect(charge.id).to match(/^test_ch/)
     expect(charge.amount).to eq(999)
     expect(charge.description).to eq('card charge')
+    expect(charge.captured).to eq(true)
+    expect(charge.status).to eq('succeeded')
+  end
+
+  it "creates a stripe charge item with a bank token" do
+    charge = Stripe::Charge.create(
+      amount: 999,
+      currency: 'USD',
+      source: stripe_helper.generate_bank_token,
+      description: 'bank charge'
+    )
+
+    expect(charge.id).to match(/^test_ch/)
+    expect(charge.amount).to eq(999)
+    expect(charge.description).to eq('bank charge')
     expect(charge.captured).to eq(true)
     expect(charge.status).to eq('succeeded')
   end
@@ -426,14 +450,14 @@ shared_examples 'Charge API' do
     charge1 = Stripe::Charge.create(
       amount: 999,
       currency: 'USD',
-      card: stripe_helper.generate_card_token,
+      source: stripe_helper.generate_card_token,
       description: 'card charge'
     )
 
     charge2 = Stripe::Charge.create(
       amount: 999,
       currency: 'USD',
-      card: stripe_helper.generate_card_token,
+      source: stripe_helper.generate_card_token,
       description: 'card charge'
     )
 
@@ -443,8 +467,9 @@ shared_examples 'Charge API' do
   context "retrieving a list of charges" do
     before do
       @customer = Stripe::Customer.create(email: 'johnny@appleseed.com')
+      @customer2 = Stripe::Customer.create(email: 'johnny2@appleseed.com')
       @charge = Stripe::Charge.create(amount: 1, currency: 'usd', customer: @customer.id)
-      @charge2 = Stripe::Charge.create(amount: 1, currency: 'usd')
+      @charge2 = Stripe::Charge.create(amount: 1, currency: 'usd', customer: @customer2.id)
     end
 
     it "stores charges for a customer in memory" do
@@ -456,12 +481,13 @@ shared_examples 'Charge API' do
     end
 
     it "defaults count to 10 charges" do
-      11.times { Stripe::Charge.create(amount: 1, currency: 'usd') }
+      11.times { Stripe::Charge.create(amount: 1, currency: 'usd', source: stripe_helper.generate_card_token) }
+
       expect(Stripe::Charge.all.data.count).to eq(10)
     end
 
     it "is marked as having more when more objects exist" do
-      11.times { Stripe::Charge.create(amount: 1, currency: 'usd') }
+      11.times { Stripe::Charge.create(amount: 1, currency: 'usd', source: stripe_helper.generate_card_token) }
 
       expect(Stripe::Charge.all.has_more).to eq(true)
     end
@@ -503,7 +529,7 @@ shared_examples 'Charge API' do
       charge = Stripe::Charge.create({
         amount: 777,
         currency: 'USD',
-        card: stripe_helper.generate_card_token
+        source: stripe_helper.generate_card_token
       })
 
       expect(charge.captured).to eq(true)
@@ -513,7 +539,7 @@ shared_examples 'Charge API' do
       charge = Stripe::Charge.create({
         amount: 777,
         currency: 'USD',
-        card: stripe_helper.generate_card_token,
+        source: stripe_helper.generate_card_token,
         capture: true
       })
 
@@ -524,7 +550,7 @@ shared_examples 'Charge API' do
       charge = Stripe::Charge.create({
         amount: 777,
         currency: 'USD',
-        card: stripe_helper.generate_card_token,
+        source: stripe_helper.generate_card_token,
         capture: false
       })
 
@@ -537,7 +563,7 @@ shared_examples 'Charge API' do
       charge = Stripe::Charge.create({
         amount: 777,
         currency: 'USD',
-        card: stripe_helper.generate_card_token,
+        source: stripe_helper.generate_card_token,
         capture: false
       })
 
@@ -551,7 +577,7 @@ shared_examples 'Charge API' do
       charge = Stripe::Charge.create({
         amount: 777,
         currency: 'USD',
-        card: stripe_helper.generate_card_token,
+        source: stripe_helper.generate_card_token,
         capture: false
       })
 
@@ -566,10 +592,11 @@ shared_examples 'Charge API' do
   end
 
   describe "idempotency" do
+    let(:customer) { Stripe::Customer.create(email: 'johnny@appleseed.com') }
     let(:idempotent_charge_params) {{
       amount: 777,
       currency: 'USD',
-      card: stripe_helper.generate_card_token,
+      customer: customer.id,
       capture: true,
       idempotency_key: 'onceisenough'
     }}
