@@ -36,6 +36,10 @@ module StripeMock
         raise "Renewing subscriptions in Live mode not supported"
       end
 
+      def upsert_stripe_object(object, attributes)
+        raise UnsupportedRequestError.new "Updating or inserting Stripe objects in Live mode not supported"
+      end
+
     end
   end
 end

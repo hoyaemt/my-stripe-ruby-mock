@@ -81,5 +81,9 @@ module StripeMock
       @instance.generate_subscription_renewal_invoice(subscription_id)
     end
 
+    def upsert_stripe_object(object, attributes)
+      @instance.upsert_stripe_object(object, attributes)
+    end
+
   end
 end
