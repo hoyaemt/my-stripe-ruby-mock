@@ -27,7 +27,9 @@ module StripeMock
         # For automatic Stripe transfers, the transfer attribute on balance_transaction stores the transfer which
         # included this balance_transaction.  However, it is not exposed as a field returned on a balance_transaction.
         # Therefore, need to not show this attribute if it exists.
-        btxn.reject{|k,v| k == :transfer }
+        if !btxn.nil?
+          btxn.reject{|k,v| k == :transfer }
+        end
       end
 
     end
