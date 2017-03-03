@@ -241,13 +241,15 @@ module StripeMock
         address_country: nil,
         cvc_check: nil,
         address_line1_check: nil,
-        address_zip_check: nil
+        address_zip_check: nil,
+        tokenization_method: nil
       }, params)
     end
 
     def self.mock_bank_account(params={})
       currency = params[:currency] || 'usd'
       {
+        id: "test_ba_default",
         object: "bank_account",
         bank_name: "STRIPEMOCK TEST BANK",
         last4: "6789",
@@ -281,6 +283,7 @@ module StripeMock
     #FIXME nested overrides would be better than hardcoding plan_id
     def self.mock_subscription(params={})
       StripeMock::Util.rmerge({
+        :created => 1478204116,
         :current_period_start => 1308595038,
         :current_period_end => 1308681468,
         :status => "trialing",

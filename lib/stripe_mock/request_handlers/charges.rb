@@ -29,7 +29,7 @@ module StripeMock
             if params[:customer]
               params[:source] = get_card(customers[params[:customer]], params[:source])
             else
-              params[:source] = get_card_by_token(params[:source])
+              params[:source] = get_card_or_bank_by_token(params[:source])
             end
           elsif params[:source][:id]
             raise Stripe::InvalidRequestError.new("Invalid token id: #{params[:source]}", 'card', 400)
@@ -176,6 +176,8 @@ module StripeMock
           raise Stripe::InvalidRequestError.new("Invalid integer: #{params[:amount]}", 'amount', 400)
         elsif non_positive_charge_amount?(params)
           raise Stripe::InvalidRequestError.new('Invalid positive integer', 'amount', 400)
+        elsif params[:source].nil? && params[:customer].nil?
+          raise Stripe::InvalidRequestError.new('Must provide source or customer.', nil)
         end
       end
 
