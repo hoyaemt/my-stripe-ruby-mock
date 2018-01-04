@@ -57,7 +57,7 @@ module StripeMock
               balance_transactions[params[:balance_transaction]]
         end
 
-        if params[:application_fee]
+        if params[:application_fee] && params[:application_fee].to_i > 0
           if params[:capture] != false
             charges[id][:application_fee] = new_application_fee('fee', amount: params[:application_fee], charge: id, account: params[:account])
             application_fees[charges[id][:application_fee]][:balance_transaction] = new_balance_transaction('txn', {amount: params[:application_fee], source: charges[id][:application_fee], type: "application_fee", fee: 0})
