@@ -194,7 +194,7 @@ module StripeMock
 
     def new_dispute(prefix, params = {})
       id = "#{StripeMock.global_id_prefix}#{prefix}_#{@dispute_counter += 1}"
-      @disputes[id] = Data.mock_disputes(params.merge(id: id))
+      @disputes[id] = Data.mock_dispute(params.merge(id: id))
       id
     end
 
