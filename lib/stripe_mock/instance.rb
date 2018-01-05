@@ -73,6 +73,7 @@ module StripeMock
       @error_queue = ErrorQueue.new
       @id_counter = 0
       @balance_transaction_counter = 0
+      @dispute_counter = 0
       @application_fee_counter = 0
 
       # This is basically a cache for ParamValidators
@@ -143,6 +144,8 @@ module StripeMock
         case object
           when :balance_transaction
             id = new_balance_transaction('txn', attributes)
+          when :dispute
+            id = new_dispute('dp', attributes)
           else
             raise UnsupportedRequestError.new "Unsupported stripe object `#{object}`"
         end
@@ -152,6 +155,9 @@ module StripeMock
           when :balance_transaction
             btxn = assert_existence :balance_transaction, id, @balance_transactions[id]
             btxn.merge!(attributes)
+          when :dispute
+            dispute = assert_existence :dispute, id, @disputes[id]
+            dispute.merge!(attributes)
           else
             raise UnsupportedRequestError.new "Unsupported stripe object `#{object}`"
         end
@@ -183,6 +189,12 @@ module StripeMock
         params[:fee] ||= (30 + (amount.abs * 0.029).ceil) * (amount > 0 ? 1 : -1)
       end
       @balance_transactions[id] = Data.mock_balance_transaction(params.merge(id: id))
+      id
+    end
+
+    def new_dispute(prefix, params = {})
+      id = "#{StripeMock.global_id_prefix}#{prefix}_#{@dispute_counter += 1}"
+      @disputes[id] = Data.mock_disputes(params.merge(id: id))
       id
     end
 
