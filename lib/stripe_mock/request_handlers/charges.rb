@@ -144,14 +144,12 @@ module StripeMock
       def refund_charge(route, method_url, params, headers)
         charge = get_charge(route, method_url, params, headers)
 
-        refund = Data.mock_refund params.merge(
-          :balance_transaction => new_balance_transaction('txn'),
-          :id => new_id('re')
+        new_refund(
+            route,
+            method_url,
+            params.merge(:charge => charge[:id]),
+            headers
         )
-        add_refund_to_charge(refund, charge)
-
-        #TODO - need to refund application_fee if refund_application_fee parameter is true
-        charge
       end
 
       def create_refund(route, method_url, params, headers)

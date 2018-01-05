@@ -36,6 +36,9 @@ module StripeMock
           refunds[id][:balance_transaction] =
             balance_transactions[balance_transaction_id]
         end
+
+        #TODO - need to refund application_fee if charge has an application_fee
+
         refund
       end
 
