@@ -50,15 +50,15 @@ module StripeMock
           params[:account] = headers[:stripe_account]
         end
 
+        # clear out application_fee if value is 0 since Stripe does not create $0 application_fees
+        params[:application_fee] = nil if params[:application_fee].to_i == 0
+
         charges[id] = Data.mock_charge(params.merge :id => id)
 
         if params[:expand] == ['balance_transaction'] && params[:capture] != false
           charges[id][:balance_transaction] =
               balance_transactions[params[:balance_transaction]]
         end
-
-        # clear out application_fee if value is 0 since Stripe does not create $0 application_fees
-        params[:application_fee] = nil if params[:application_fee].to_i == 0
 
         if params[:application_fee]
           if params[:capture] != false
