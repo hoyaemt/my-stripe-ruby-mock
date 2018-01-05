@@ -8,8 +8,7 @@ module StripeMock
         klass.add_handler 'get /v1/charges/(.*)',           :get_charge
         klass.add_handler 'post /v1/charges/(.*)/capture',  :capture_charge
         klass.add_handler 'post /v1/charges/(.*)/refund',   :refund_charge
-        klass.add_handler 'post /v1/charges/(.*)/refunds',  :create_refund
-        klass.add_handler 'post /v1/refunds',               :create_refund
+        klass.add_handler 'post /v1/charges/(.*)/refunds',  :refund_charge
         klass.add_handler 'post /v1/charges/(.*)',          :update_charge
       end
 
@@ -150,20 +149,6 @@ module StripeMock
             params.merge(:charge => charge[:id]),
             headers
         )
-      end
-
-      def create_refund(route, method_url, params, headers)
-        charge = get_charge(route, method_url, params, headers)
-
-        refund = Data.mock_refund params.merge(
-          :balance_transaction => new_balance_transaction('txn'),
-          :id => new_id('re'),
-          :charge => charge[:id]
-        )
-        add_refund_to_charge(refund, charge)
-
-        #TODO - need to refund application_fee if refund_application_fee parameter is true
-        refund
       end
 
       private
